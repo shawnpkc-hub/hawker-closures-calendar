@@ -4,39 +4,58 @@ import pandas as pd
 import requests
 from ics import Calendar, Event
 from datetime import datetime
+import os
 
+# ensure docs folder exists
+os.makedirs("docs", exist_ok=True)
+
+# Official data.gov.sg API endpoint
 DATA_URL = "https://data.gov.sg/api/action/datastore_search?resource_id=8e6b0f1c-0a0a-4c4d-9c1c-3c4a4b0fdf6c&limit=500"
 
+print("Downloading dataset...")
+
 data = requests.get(DATA_URL).json()
-df = pd.DataFrame(data["result"]["records"])
+records = data["result"]["records"]
+
+df = pd.DataFrame(records)
+
+print("Columns detected:", df.columns.tolist())
 
 cal = Calendar()
 
-def add_event(name, start, end, remark):
-    if pd.isna(start):
-        return
+def parse_date(value):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "")).date()
+    except:
+        return None
 
-    start_date = datetime.strptime(start, "%d/%m/%Y")
-    end_date = datetime.strptime(end, "%d/%m/%Y")
+events_added = 0
+
+for _, row in df.iterrows():
+
+    name = row.get("hawker_centre") or row.get("name")
+    start = parse_date(row.get("start_date"))
+    end = parse_date(row.get("end_date"))
+    desc = row.get("description", "Hawker Centre Closure")
+
+    if not name or not start:
+        continue
 
     e = Event()
     e.name = f"{name} – CLOSED"
-    e.begin = start_date.date()
-    e.end = end_date.date()
+    e.begin = start
+    e.end = end or start
     e.make_all_day()
-    e.description = f"NEA Hawker Closure ({remark})"
+    e.description = desc
 
     cal.events.add(e)
+    events_added += 1
 
-for _, row in df.iterrows():
-    name = row["Name"]
-
-    add_event(name, row["Q1 Cleaningstartdate"], row["Q1 Cleaningenddate"], "Cleaning")
-    add_event(name, row["Q2 Cleaningstartdate"], row["Q2 Cleaningenddate"], "Cleaning")
-    add_event(name, row["Q3 Cleaningstartdate"], row["Q3 Cleaningenddate"], "Cleaning")
-    add_event(name, row["Q4 Cleaningstartdate"], row["Q4 Cleaningenddate"], "Cleaning")
-    add_event(name, row["Other Works Startdate"], row["Other Works Enddate"], "Renovation")
+print("Events added:", events_added)
 
 with open("docs/hawker_closures.ics", "w") as f:
     f.writelines(cal)
-print("Calendar generated:", len(cal.events), "events")
+
+print("Calendar written successfully.")
