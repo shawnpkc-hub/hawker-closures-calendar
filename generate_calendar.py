@@ -14,7 +14,18 @@ DATA_URL = "https://data.gov.sg/api/action/datastore_search?resource_id=8e6b0f1c
 
 print("Downloading dataset...")
 
-data = requests.get(DATA_URL).json()
+import os
+
+API_KEY = os.getenv("DATA_GOV_SG_API_KEY")
+
+headers = {
+    "api-key": API_KEY
+}
+
+response = requests.get(DATA_URL, headers=headers)
+response.raise_for_status()
+
+data = response.json()
 records = data["result"]["records"]
 
 df = pd.DataFrame(records)
