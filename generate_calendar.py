@@ -3,7 +3,7 @@ import requests
 from ics import Calendar, Event
 from datetime import datetime
 
-DATA_URL = "https://data.gov.sg/dataset/.../DatesofHawkerCentresClosure.csv"
+DATA_URL = "https://data.gov.sg/api/action/datastore_search?resource_id=8e6b0f1c-0a0a-4c4d-9c1c-3c4a4b0fdf6c&limit=500"
 
 df = pd.read_csv(DATA_URL)
 
