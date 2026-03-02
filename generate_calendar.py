@@ -1,3 +1,5 @@
+import os
+os.makedirs("docs", exist_ok=True)
 import pandas as pd
 import requests
 from ics import Calendar, Event
@@ -5,7 +7,8 @@ from datetime import datetime
 
 DATA_URL = "https://data.gov.sg/api/action/datastore_search?resource_id=8e6b0f1c-0a0a-4c4d-9c1c-3c4a4b0fdf6c&limit=500"
 
-df = pd.read_csv(DATA_URL)
+data = requests.get(DATA_URL).json()
+df = pd.DataFrame(data["result"]["records"])
 
 cal = Calendar()
 
@@ -36,3 +39,4 @@ for _, row in df.iterrows():
 
 with open("docs/hawker_closures.ics", "w") as f:
     f.writelines(cal)
+print("Calendar generated:", len(cal.events), "events")
